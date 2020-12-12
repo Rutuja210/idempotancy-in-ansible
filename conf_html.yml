@@ -1,0 +1,63 @@
+- hosts: 192.168.43.88
+  vars_prompt:
+        - name: dvd_dir
+          private: no
+          prompt: "Enter ur dvd mount point"
+  tasks:
+  - name: Creating directory
+    file:
+          state: directory
+          path: "{{dvd_dir}}"
+
+  - name: mounting cdrom
+    mount:
+          src: "/dev/cdrom"
+          path: "{{dvd_dir}}"
+          state: mounted
+          fstype: "iso9660"
+
+  - name: creating yum repo
+    yum_repository:
+          baseurl: "{{dvd_dir}}/AppStream"
+          name: "mydvd1"
+          description: "my yum dvd for package"
+          gpgcheck: no
+
+  - name: creating yum repo
+    yum_repository:
+          baseurl: "{{dvd_dir}}/BaseOS"
+          name: "mydvd1"
+          description: "hiiiiiiiiiiii"
+          gpgcheck: no
+
+  - name: installing httpd
+    package:
+          name: "httpd"
+          state: present
+
+  - name: Creating default cong directory for httpd
+    file:
+          state: directory
+          path: "/var/www/vimal"
+
+  - name: copying conf file
+    copy:
+         dest: "/etc/httpd/conf.d/lw.conf"
+         src: "lw.conf"
+    notify: restarting httpd
+  - name: copying html page
+    copy:
+          dest: "/var/www/html/index.html"
+          content: "This is my website\n"
+
+  - firewalld:
+          port: "8080/tcp"
+          state: enabled
+          permanent: yes
+          immediate: yes
+
+  handlers:
+  - name: restarting httpd
+    service:
+         name: "httpd"
+         state: "restarted"
